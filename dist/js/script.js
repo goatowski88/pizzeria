@@ -165,6 +165,7 @@
       thisProduct.cartButton.addEventListener('click', function(event){
         event.preventDefault();
         thisProduct.processOrder();
+        thisProduct.addToCart();
       });
 
     }
@@ -224,12 +225,53 @@
 
         }
       }
+      thisProduct.priceSingle = price;
       price *= thisProduct.amountWidget.value;
+      thisProduct.price = price;
+      thisProduct.amount = thisProduct.amountWidget.value;
 
       // update calculated price in the HTML
       thisProduct.priceElem.innerHTML = price;
-    }
 
+
+    }
+    addToCart(){
+      const thisProduct = this;
+      app.cart.add(thisProduct.prepareCartProduct());
+    }
+    prepareCartProduct() {
+      const thisProduct = this;
+      const productSummary = {};
+      productSummary.id = thisProduct.id;
+      productSummary.name = thisProduct.data.name;
+      productSummary.amount = thisProduct.amount;
+      productSummary.price = thisProduct.price;
+      productSummary.priceSingle = thisProduct.priceSingle;
+      productSummary.params = thisProduct.prepareCartProductParams();
+      return productSummary
+
+    }
+    prepareCartProductParams() {
+      const thisProduct = this;
+      const paramsSumary = {};
+      // covert form to object structure e.g. { sauce: ['tomato'], toppings: ['olives', 'redPeppers']}
+      const formData = utils.serializeFormToObject(thisProduct.form);
+
+      for(let paramId in thisProduct.data.params) {
+        const param = thisProduct.data.params[paramId];
+        paramsSumary[paramId] = {label: param.label, options: {}};
+        for(let optionId in param.options) {
+          const option = param.options[optionId];
+          if(formData[paramId] && formData[paramId].includes(optionId)) {
+            paramsSumary[paramId].options[optionId] = option.label;
+          }
+                      
+
+        }
+      }
+    return paramsSumary;
+
+    }
   }
 
   class AmountWidget {
@@ -303,6 +345,10 @@
       thisCart.dom.wrapper = element;
 
       thisCart.dom.toggleTrigger = thisCart.dom.wrapper.querySelector(select.cart.toggleTrigger);
+
+      thisCart.dom.productList = thisCart.dom.wrapper.querySelector(select.cart.productList);
+
+
     }
 
     initActions(){
@@ -311,6 +357,16 @@
         event.preventDefault();
         thisCart.dom.wrapper.classList.toggle(classNames.cart.wrapperActive);
       });
+    }
+    add(menuProduct){
+      const thisCart = this;
+      const generatedHTML = templates.cartProduct(menuProduct);
+
+      /*create element using utils.createElementFromHTML */
+      const element = utils.createDOMFromHTML(generatedHTML);
+
+      /*add element to menu */
+      thisCart.dom.productList.appendChild(element);
     }
   }
 
